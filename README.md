@@ -1,6 +1,9 @@
 # NoSQL Gerenciado e Recuperação no Tempo: Carrinho no DynamoDB
 
-> Documento de informação do **AWS DynamoDB Recovery Lab**. Conta a história da migração do **carrinho** da loja **AWS Database Lab Store** do banco relacional para o **Amazon DynamoDB** (NoSQL gerenciado), a habilitação do **Point-in-Time Recovery (PITR)** e o que se aprende para a certificação **AWS Certified Solutions Architect – Associate (SAA-C03)**. Os números marcados como *(medir)* devem ser substituídos pelos valores reais coletados na execução (evidências em `evidencias/`).
+> Documento de informação do **AWS DynamoDB Recovery Lab**. Conta a história da migração do **carrinho** da loja **AWS Database Lab Store** do banco relacional para o **Amazon DynamoDB** (NoSQL gerenciado), a habilitação do **Point-in-Time Recovery (PITR)**. Os números marcados como *(medir)* devem ser substituídos pelos valores reais coletados na execução (evidências em `evidencias/`).
+
+![Descrição da imagem](<imagens/imagem%20(1).png>)
+
 >
 > **DNS:** `dynamodb-lab.inhesta.net`
 > **Demais documentos:** `ARQUITETURA.md` (diagramas ANTES/DEPOIS), `IMPLANTACAO.md` (passo a passo detalhado no Console), `IMPLANTACAO-RESUMO.md` (guia enxuto de execução), `TESTES.md` (matriz de testes com resultados) e `EXCLUSAO.md` (limpeza/custo ao encerrar).
@@ -32,6 +35,8 @@ Usuário → Route 53 (dynamodb-lab.inhesta.net) → EC2 (Flask)  [MESMA EC2, ME
                                                  └── imagens no Amazon S3  [MESMO BUCKET]
 ```
 
+![Descrição da imagem](<imagens/imagem%20(21).png>)
+
 O único bloco de dados que troca de tecnologia é o **carrinho**. A camada de computação (EC2), as imagens (S3) e o restante dos dados (relacional) continuam iguais.
 
 ## A decisão — mover só o carrinho (persistência poliglota)
@@ -51,6 +56,8 @@ A decisão foi **migrar apenas o carrinho** para o **Amazon DynamoDB**, mantendo
 | Route 53 (`inhesta.net`) | Projeto 01 | Adiciona `dynamodb-lab.inhesta.net` para a mesma EC2 |
 
 O código **não é duplicado**: a fonte de verdade é `01-rds-resilience/app/`. O `cart.py` escolhe o backend por `Config.CART_MODE`, então a migração é **reversível por configuração**.
+
+![Descrição da imagem](<imagens/imagem%20(20).png>)
 
 ## A implementação — tabela, backend, IAM e DNS
 
@@ -72,6 +79,14 @@ O teste central (detalhado em `TESTES.md`) cumpre o ciclo de recuperação:
 4. **Restaurar para o momento anterior**, gerando a tabela **nova** `carrinho-lab-restaurada`.
 
 A **regra de ouro** é o coração do aprendizado: o PITR **nunca sobrescreve** a tabela original. O restore **sempre cria uma tabela nova** — seguro por design, pois os dados atuais continuam intactos enquanto você inspeciona a cópia restaurada. A comparação final mostra a original sem os itens e a restaurada com os itens do horário-alvo.
+
+![Descrição da imagem](<imagens/imagem%20(7).png>)
+
+<p align="center">
+  <img src="imagens/imagem%20(18).png" width="30%" />
+  <img src="imagens/imagem%20(7).png" width="30%" />
+  <img src="imagens/imagem%20(6).png" width="30%" />
+</p>
 
 ## Observabilidade — o evento nasce do alarme
 
@@ -115,15 +130,6 @@ Nunca manter Aurora + RDS + réplicas ao mesmo tempo sem necessidade (Req. 12.2)
 - **PITR e a regra "restore = nova tabela":** backup contínuo, janela de 35 dias, restore granular por segundo; o restore materializa uma tabela nova e preserva a original.
 - **Reaproveitamento vale ouro:** interface estável de `cart.py` + backend por configuração = zero mudança em rotas/templates/infra.
 - **O fluxo de evento parte do alarme:** como o DynamoDB não emite eventos de serviço de failover, a observabilidade de eventos nasce do alarme do CloudWatch.
-
-## Relação com AWS SAA (SAA-C03)
-
-- **DynamoDB (NoSQL gerenciado):** tabelas, PK/SK, modelo *schemaless*, quando escolher NoSQL vs. relacional.
-- **Capacidade On-Demand vs. Provisionada:** trade-offs de custo e resposta a picos.
-- **Point-in-Time Recovery:** backup contínuo, janela de 35 dias, restore granular; restore cria **sempre** uma nova tabela; PITR vs. backup sob demanda.
-- **Segurança e IAM:** acesso via IAM Role com credenciais temporárias e política de **menor privilégio** restrita ao ARN, em vez de chaves fixas.
-- **Observabilidade:** métricas do DynamoDB, alarmes e integração EventBridge/CloudWatch Logs.
-- **Custo:** dimensionar o mínimo, não manter recursos caros ociosos, remover artefatos de teste.
 
 ## Conclusão
 

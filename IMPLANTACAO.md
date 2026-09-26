@@ -17,6 +17,12 @@
 - **EC2** rodando a aplicação Flask (systemd) em `<APP_DIR>` (ex.: `/opt/aws-database-lab`), com IAM Role já anexada (a do S3).
 - **Amazon S3** servindo as imagens (`STORAGE_MODE=s3`) e **Route 53** com a zona hospedada ativa.
 - **Observabilidade** dos projetos anteriores preservada (será só estendida).
+![Descrição da imagem](<imagens/imagem%20(15).png>)
+![Descrição da imagem](<imagens/imagem%20(17).png>)
+
+![Descrição da imagem](<imagens/imagem%20(3).png>)
+![Descrição da imagem](<imagens/imagem%20(2).png>)
+
 
 ## Convenções (variáveis)
 
@@ -56,6 +62,8 @@
 
 > Os atributos não-chave (`quantidade`, `nome_produto`, `preco`, `atualizado_em`) **não** são declarados aqui — o DynamoDB é *schemaless* fora das chaves; a aplicação os grava.
 
+![Descrição da imagem](<imagens/imagem%20(16).png>)
+
 ### 1.2 Dar permissão IAM à EC2 (menor privilégio)
 
 > A EC2 já tem a Role do S3. Adicione a ela uma política inline só para a `carrinho-lab` — sem chaves fixas, sem `dynamodb:*`, restrita ao ARN da tabela. Uma instância só tem **uma** Role, então acrescentamos a política à existente.
@@ -84,6 +92,9 @@
 3. Nome: `politica-carrinho-dynamodb-lab` → **Criar política**.
 
 > **Validação:** confirme a tabela e a permissão com uma operação real (`put`/`get`/`delete`) — ver `TESTES.md`, **T3D.1** e Bloco A. "Ativa" no Console não basta (Req. 14.4).
+
+![Descrição da imagem](<imagens/imagem%20(5).png>)
+![Descrição da imagem](<imagens/imagem%20(8).png>)
 
 ---
 
@@ -128,6 +139,7 @@ sudo systemctl restart aws-database-lab
 3. **Criar registros**. *(Os registros `rds-lab`/`aurora-lab` podem coexistir — mesmo IP.)*
 
 > **Validação:** `nslookup` + abrir a loja pelo domínio (porta 5000, que o DNS não altera) — ver `TESTES.md`, **T3D.0**.
+![Descrição da imagem](<imagens/imagem%20(19).png>)
 
 ---
 
@@ -151,12 +163,20 @@ CloudWatch → **Painéis** → **Criar painel** → `db-lab-03-dynamodb`. Widge
 - `SuccessfulRequestLatency` (por operação; Average) (latência)
 - `ThrottledRequests` (Sum), `SystemErrors` (Sum) (saúde)
 
+![Descrição da imagem](<imagens/imagem%20(13).png>)
+![Descrição da imagem](<imagens/imagem%20(14).png>)
+
 ### 5.2 Alarme didático
 CloudWatch → **Alarmes** → **Criar alarme** → DynamoDB → `carrinho-lab` → **ThrottledRequests**:
 - Estatística **Sum**, período **1 min**, condição **Maior que 0**
+![Descrição da imagem](<imagens/imagem%20(12).png>)
+
 - Nome: `db-lab-03-dynamodb-throttling`
 - Tratar dados ausentes: **Tratar como não violado (bom)**
 - SNS: opcional (e-mail)
+
+![Descrição da imagem](<imagens/imagem%20(10).png>)
+![Descrição da imagem](<imagens/imagem%20(11).png>)
 
 ### 5.3 Log Group
 CloudWatch → **Logs** → **Grupos de logs** → **Criar** → nome **`/aws/events/db-lab-03-dynamodb`**, retenção **30 dias**.

@@ -40,7 +40,7 @@
 
 > O DynamoDB só cobre o carrinho. O relacional (Aurora/RDS) é o item mais caro da série — decida o que fazer antes de subir o resto. O Aurora não tem classe `micro`, então mantê-lo ocioso é o maior custo.
 
-- **Cenário A (mais econômico) — não precisa da loja relacional durante os testes:** **parar** ou **excluir** o Aurora (RDS → cluster → Ações → Parar temporariamente, ou excluir com snapshot final). O carrinho no DynamoDB funciona sozinho; produtos/clientes/pedidos ficam indisponíveis.
+- **Cenário A (mais econômico) — não precisa da loja relacional durante os testes:** **parar** ou **excluir** o Aurora (RDS → cluster → Ações → Parar temporariamente, ou excluir com snapshot final). O carrinho no DynamoDB funciona sozinho; produtos/clientes/pedidos ficam indisponíveis..
 - **Cenário B — quer a loja inteira funcional:** manter **um único** relacional mínimo — RDS MySQL Single-AZ (`db.t3.micro`) **ou** Aurora com 1 instância (sem Readers; esvaziar `DB_READER_ENDPOINT`).
 - **Regra (Req. 12.2):** nunca manter Aurora + RDS + réplicas ligados ao mesmo tempo sem necessidade. Detalhes em `EXCLUSAO.md`.
 
